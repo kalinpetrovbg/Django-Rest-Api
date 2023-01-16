@@ -40,7 +40,13 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     email = models.EmailField(max_length=255, unique=True)
     name = models.CharField(max_length=100)
-    is_active = models.BooleanField(default=True)
+    title = models.CharField(max_length=100, blank=True)
+    company = models.CharField(max_length=100, blank=True)
+    likes = models.IntegerField(default=0)
+    posts = models.IntegerField(default=0)
+    photo = models.ImageField(upload_to="media/", default='k1.png')
+
+    is_active = models.BooleanField(default=False)
     is_staff = models.BooleanField(default=False)
 
     objects = UserManager()

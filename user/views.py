@@ -1,19 +1,16 @@
 """
 Views for the user API.
 """
-# from django.contrib.auth import get_user_model
-from django.contrib.auth import get_user_model
-from rest_framework import authentication, generics, permissions
+from rest_framework import generics, authentication, permissions
+from user.serializers import UserSerializer, AuthTokenSerializer, CreateUserSerializer
+
 from rest_framework.authtoken.views import ObtainAuthToken
 from rest_framework.settings import api_settings
-
-from users.serializers import AuthTokenSerializer, UserSerializer
 
 
 class CreateUserView(generics.CreateAPIView):
     """Create a new user in the system."""
-
-    serializer_class = UserSerializer
+    serializer_class = CreateUserSerializer
 
 
 class CreateTokenView(ObtainAuthToken):
@@ -34,9 +31,3 @@ class ManageUserView(generics.RetrieveUpdateAPIView):
         """Retrieve and return the authenticated user."""
         return self.request.user
 
-
-class DeleteUserView(generics.DestroyAPIView):
-    """Delete a user from the system."""
-
-    queryset = get_user_model().objects.all()
-    serializer_class = UserSerializer

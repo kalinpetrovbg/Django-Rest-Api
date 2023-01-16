@@ -12,9 +12,17 @@ class UserAdmin(BaseUserAdmin):
     """Define the admin pages for users."""
 
     ordering = ["id"]
-    list_display = ["email", "name"]
+    list_display = ["email", "name", "is_active"]
     fieldsets = (
-        (None, {"fields": ("email", "password")}),
+        (None, {"fields": (
+            "email",
+            "password",
+            "title",
+            "company",
+            "likes",
+            "posts",
+            "photo",
+        )}),
         (
             _("Permissions"),
             {
@@ -27,7 +35,7 @@ class UserAdmin(BaseUserAdmin):
         ),
         (_("Important dates"), {"fields": ("last_login",)}),
     )
-    readonly_fields = ["last_login"]
+    readonly_fields = ["last_login", "likes", "posts"]
     add_fieldsets = (
         (
             None,

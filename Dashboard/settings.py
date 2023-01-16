@@ -1,4 +1,5 @@
 from pathlib import Path
+import os
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -25,14 +26,14 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
-    "rest_auth",
-    "rest_auth.registration",
+
     "core",
     "rest_framework",
     "rest_framework.authtoken",
     "drf_spectacular",
     "posts",
-    "users",
+    "user",
+    # 'knox',
 ]
 
 MIDDLEWARE = [
@@ -107,12 +108,6 @@ USE_I18N = True
 
 USE_TZ = True
 
-
-# Static files (CSS, JavaScript, Images)
-# https://docs.djangoproject.com/en/4.1/howto/static-files/
-
-STATIC_URL = "static/"
-
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.1/ref/settings/#default-auto-field
 
@@ -121,12 +116,9 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 AUTH_USER_MODEL = "core.User"
 
 REST_FRAMEWORK = {
-    # Use Django's standard `django.contrib.auth` permissions,
-    # or allow read-only access for unauthenticated users.
-    "DEFAULT_PERMISSION_CLASSES": [
-        # 'rest_framework.permissions.DjangoModelPermissionsOrAnonReadOnly'
-        "rest_framework.permissions.DjangoModelPermissionsOrAnonReadOnly"
-    ],
+    # "DEFAULT_PERMISSION_CLASSES": [
+    #     "rest_framework.permissions.DjangoModelPermissionsOrAnonReadOnly"
+    # ],
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
 }
 
@@ -137,3 +129,16 @@ SPECTACULAR_SETTINGS = {
     "SERVE_INCLUDE_SCHEMA": False,
     # OTHER SETTINGS
 }
+
+# Static files (CSS, JavaScript, Images)
+
+STATIC_URL = '/static/'
+
+STATICFILES_DIRS = (
+    BASE_DIR / 'static',
+)
+
+# Media settings
+
+MEDIA_URL = 'media/'
+MEDIA_ROOT = BASE_DIR / 'media_files'
