@@ -1,33 +1,42 @@
-from rest_framework import serializers
-from .models import Post, Rating
 from django.contrib.auth.models import User
+from rest_framework import serializers
 from rest_framework.authtoken.models import Token
 
+from .models import Post, Rating
+
+
 class UserSerializer(serializers.ModelSerializer):
-    """ Text. """
+    """Text."""
+
     class Meta:
-        """ Text. """
+        """Text."""
+
         model = User
-        fields = ('id', 'username', 'password')
-        extra_kwargs = {'password': {'write_only': True, 'required': True}}
+        fields = ("id", "username", "password")
+        extra_kwargs = {"password": {"write_only": True, "required": True}}
 
     def create(self, validated_data):
-        """ Text. """
+        """Text."""
         user = User.objects.create_user(**validated_data)
         Token.objects.create(user=user)
         return user
 
+
 class PostSerializer(serializers.ModelSerializer):
-    """ Text. """
+    """Text."""
+
     class Meta:
-        """ Text. """
+        """Text."""
+
         model = Post
-        fields = ('id', 'author', 'content',  'total_likes', 'liked_by')
+        fields = ("id", "author", "content", "total_likes", "liked_by")
 
 
 class RatingSerializer(serializers.ModelSerializer):
-    """ Text. """
+    """Text."""
+
     class Meta:
-        """ Text. """
+        """Text."""
+
         model = Rating
-        fields = ('id', 'likes', 'post', 'user')
+        fields = ("id", "likes", "post", "user")
