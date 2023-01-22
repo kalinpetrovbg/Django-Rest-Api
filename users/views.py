@@ -1,3 +1,4 @@
+"""User views."""
 import datetime
 import json
 import logging
@@ -11,7 +12,7 @@ from rest_framework.response import Response
 
 from tweets.models import HackPost
 from tweets.serializers import PostSerializer
-from django.contrib.auth import get_user_model, logout
+from django.contrib.auth import get_user_model
 from users.serializers import UserSerializer
 
 logger = logging.getLogger(__name__)
@@ -21,22 +22,6 @@ logging.basicConfig(
 )
 
 EXP_TIME = datetime.timedelta(hours=2)
-
-
-@api_view(["POST"])
-def register(request):
-    """
-    Purpose: Create a new user
-    Input:
-    email (mandatory) <str> Chosen Username
-    password (mandatory) <str> Chosen Password
-    Output: User object of the created user
-    """
-    serializer = UserSerializer(data=request.query_params)
-    if serializer.is_valid():
-        serializer.save()
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
-    return Response("User was not created", status=status.HTTP_400_BAD_REQUEST)
 
 
 def get_token(email):
@@ -79,6 +64,77 @@ def get_token(email):
         }
         logger.error(e)
         return Response(error, status=status.HTTP_400_BAD_REQUEST)
+
+
+
+def authentication(request, user_id):
+    """
+    Login to the Application.
+    Input:
+        token (mandatory) <str> user's token
+    Output: User object of the logged-in user.
+    """
+    try:
+
+        token = request.session.get("authtoken").get("token")
+        payload = jwt.decode(token, key=settings.AUTH_TOKEN, algorithms=['HS256'])
+        user = get_user_model().objects.get(id=user_id)
+
+        if payload.get("email") == user.email:
+            serializer = UserSerializer(user)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        else:
+            error = {
+                "Error_code": status.HTTP_403_FORBIDDEN,
+                "Error_Message": "Invalid User",
+            }
+            logger.error(error)
+            return Response(error, status=status.HTTP_403_FORBIDDEN)
+    except (jwt.ExpiredSignatureError, jwt.DecodeError, jwt.InvalidTokenError) as e:
+        error = {
+            "Error_code": status.HTTP_403_FORBIDDEN,
+            "Error_Message": "Token is Invalid/Expired",
+        }
+        logger.error(e)
+        return Response(error, status=status.HTTP_403_FORBIDDEN)
+
+    except Exception as e:
+        error = {
+            "Error_code": status.HTTP_403_FORBIDDEN,
+            "Error_Message": "Internal Server Error",
+        }
+        logger.error(e)
+        return Response(error, status=status.HTTP_403_FORBIDDEN)
+
+
+def is_authorized(request, user_id):
+    """
+    Authorizing the user.
+    :param request:
+    :param user_id:
+    :return:
+    """
+    validation = authentication(request, user_id)
+    if validation.status_code == 200:
+        return True
+    else:
+        return False
+
+
+@api_view(["POST"])
+def create(request):
+    """
+    Purpose: Create a new user
+    Input:
+    email (mandatory) <str> Chosen Username
+    password (mandatory) <str> Chosen Password
+    Output: User object of the created user
+    """
+    serializer = UserSerializer(data=request.query_params)
+    if serializer.is_valid():
+        serializer.save()
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+    return Response("User was not created", status=status.HTTP_400_BAD_REQUEST)
 
 
 @api_view(["POST"])
@@ -135,60 +191,6 @@ def logout(request, user_id=None):
         }
         logger.error(e)
         return Response(error, status=status.HTTP_400_BAD_REQUEST)
-
-
-def authentication(request, user_id):
-    """
-    Login to the Application.
-    Input:
-        token (mandatory) <str> user's token
-    Output: User object of the logged-in user.
-    """
-    try:
-
-        token = request.session.get("authtoken").get("token")
-        payload = jwt.decode(token, key=settings.AUTH_TOKEN, algorithms=['HS256'])
-        user = get_user_model().objects.get(id=user_id)
-
-        if payload.get("email") == user.email:
-            serializer = UserSerializer(user)
-            return Response(serializer.data, status=status.HTTP_200_OK)
-        else:
-            error = {
-                "Error_code": status.HTTP_403_FORBIDDEN,
-                "Error_Message": "Invalid User",
-            }
-            logger.error(error)
-            return Response(error, status=status.HTTP_403_FORBIDDEN)
-    except (jwt.ExpiredSignatureError, jwt.DecodeError, jwt.InvalidTokenError) as e:
-        error = {
-            "Error_code": status.HTTP_403_FORBIDDEN,
-            "Error_Message": "Token is Invalid/Expired",
-        }
-        logger.error(e)
-        return Response(error, status=status.HTTP_403_FORBIDDEN)
-
-    except Exception as e:
-        error = {
-            "Error_code": status.HTTP_403_FORBIDDEN,
-            "Error_Message": "Internal Server Error",
-        }
-        logger.error(e)
-        return Response(error, status=status.HTTP_403_FORBIDDEN)
-
-
-def is_authorized(request, user_id):
-    """
-    Authorizing the user.
-    :param request:
-    :param user_id:
-    :return:
-    """
-    validation = authentication(request, user_id)
-    if validation.status_code == 200:
-        return True
-    else:
-        return False
 
 
 @api_view(["PUT"])
