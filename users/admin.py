@@ -22,8 +22,9 @@ class UserAdmin(admin.ModelAdmin):
         "email",
         "name",
         "description",
+        "profile_image",
         "own_posts",
-        "profile_image"
+        "is_active",
     )
     readonly_fields = ("token", "date_joined", "last_login")
 
@@ -31,9 +32,9 @@ class UserAdmin(admin.ModelAdmin):
 
     actions = ("activate_users",)
 
-    # def activate_users(self, request, queryset):
-    #     """Actvate sandboxed users and enable them to log in."""
-    #     queryset.update(is_staff=False)
+    def activate_users(self, request, queryset):
+        """Actvate sandboxed users and enable them to log in."""
+        queryset.update(is_active=True)
 
     def profile_image(self, obj: CustomUser) -> bool:
         """Checks if the user has uploaded a photo or not."""

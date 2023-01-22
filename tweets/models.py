@@ -18,3 +18,7 @@ class HackPost(models.Model):
     liked_by = models.ManyToManyField(get_user_model(), related_name="liked_users", blank=True)
     likes = models.IntegerField(default=0)
     published = models.BooleanField(default=True)
+
+
+    class Meta:
+        verbose_name = 'Post'

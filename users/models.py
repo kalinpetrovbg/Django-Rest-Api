@@ -19,17 +19,20 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
     """Defining a custom user based on email address."""
 
     email = models.EmailField(_('email address'), unique=True)
-    is_staff = models.BooleanField(default=False)
-    is_active = models.BooleanField(default=True)
-    date_joined = models.DateTimeField(default=timezone.now)
 
     name = models.CharField(max_length=100, null=True, blank=True)
     description = models.CharField(max_length=100, null=True, blank=True)
     token = models.CharField(max_length=10000, null=True, blank=True)
     photo = models.ImageField(upload_to=upload_to, blank=True, null=True)
 
+    is_staff = models.BooleanField(default=False)
+    is_active = models.BooleanField(default=False)
+    date_joined = models.DateTimeField(default=timezone.now)
+
+
     class Meta:
         ordering = ("-id",)
+        verbose_name = 'User'
 
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = []
