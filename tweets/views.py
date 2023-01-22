@@ -8,7 +8,8 @@ from rest_framework.response import Response
 
 from tweets.models import HackPost
 from tweets.serializers import PostSerializer, PostValidator
-from users.models import HackUser
+from django.contrib.auth import get_user_model
+
 from users.views import is_authorized
 
 logger = logging.getLogger(__name__)
@@ -19,9 +20,9 @@ def get_user_object(user_id: int = None) -> object:
     """
     Returns User object corresponding to the username.
     :param user_id: int
-    :return: HackUser
+    :return: get_user_model
     """
-    return HackUser.objects.get(id=user_id)
+    return get_user_model().objects.get(id=user_id)
 
 
 @api_view(["POST"])
@@ -29,7 +30,7 @@ def create_post(request):
     """
     Creating a new post.
     Input:
-        user_id: (mandatory) <int> HackUser id
+        user_id: (mandatory) <int> get_user_model id
         content: (mandatory) <str> Post's text
     Output: Post obbject of the newly created post.
     """
@@ -37,7 +38,7 @@ def create_post(request):
         author_id = request.query_params.get("user_id")
         post_content = request.query_params.get("content")
 
-        if not is_authorized(request, author_id):  # Todo NOT authorized to be removed
+        if is_authorized(request, author_id):
             validate = PostValidator(request.query_params, request.FILES)
 
             if validate.is_valid():
@@ -82,7 +83,7 @@ def like(request, post_id=None):
         user_id = request.query_params.get("user_id")
         user = get_user_object(user_id)
 
-        if not is_authorized(request, user):  # Todo
+        if is_authorized(request, user):
             post = HackPost.objects.get(id=post_id)
             post.liked_by.add(user)  # Todo not repeat likes
             post.likes += 1
@@ -117,7 +118,7 @@ def dislike(request, post_id=None):
         user_id = request.query_params.get("user_id")
         user = get_user_object(user_id)
 
-        if not is_authorized(request, user):  # Todo
+        if is_authorized(request, user):
             post = HackPost.objects.get(id=post_id)
             post.liked_by.remove(user)
             post.likes -= 1
@@ -152,7 +153,7 @@ def remove_post(request, post_id: int = None):
     try:
         post = HackPost.objects.get(id=post_id)
         username = post.author.username  # Todo author
-        if not is_authorized(request, username):  # Todo
+        if is_authorized(request, username):
             serializer = PostSerializer(post)
             post.published = False
             return Response(serializer.data, status=status.HTTP_200_OK)

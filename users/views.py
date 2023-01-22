@@ -11,7 +11,7 @@ from rest_framework.response import Response
 
 from tweets.models import HackPost
 from tweets.serializers import PostSerializer
-from users.models import HackUser
+from django.contrib.auth import get_user_model, logout
 from users.serializers import UserSerializer
 
 logger = logging.getLogger(__name__)
@@ -28,7 +28,7 @@ def register(request):
     """
     Purpose: Create a new user
     Input:
-    username (mandatory) <str> Chosen Username
+    email (mandatory) <str> Chosen Username
     password (mandatory) <str> Chosen Password
     Output: User object of the created user
     """
@@ -39,31 +39,26 @@ def register(request):
     return Response("User was not created", status=status.HTTP_400_BAD_REQUEST)
 
 
-def get_token(username):
+def get_token(email):
     """
-    Purpose: Get Access token
+    Get Access token
     Input:
-    username (mandatory) <str> Account user
-    password (mandatory) <str> Password
-    Output: Token that expires in 60 minutes
+    email (mandatory) <str>
+    password (mandatory) <str>
+    Output: Token that expires in 120 minutes
     """
     try:
-        user = HackUser.objects.get(username=username)
+        user = get_user_model().objects.get(email=email)
         if user:
             try:
                 payload = {
                     "id": user.id,
-                    "username": user.username,
+                    "email": user.email,
                     "exp": datetime.datetime.utcnow() + EXP_TIME,
                 }
-                token = {"token": jwt.encode(payload, settings.AUTH_TOKEN)}
-                # token = {
-                # 'token': jwt.encode(
-                # payload, settings.AUTH_TOKEN
-                # ).decode('utf8')
-                # }
-                # jwt.encode({'exp': datetime.utcnow()}, 'secret')
+                token = {"token": jwt.encode(payload, key=settings.AUTH_TOKEN, algorithm='HS256')}
                 return token
+
             except Exception as e:
                 error = {
                     "Error_code": status.HTTP_400_BAD_REQUEST,
@@ -74,7 +69,7 @@ def get_token(username):
         else:
             error = {
                 "Error_code": status.HTTP_400_BAD_REQUEST,
-                "Error_Message": "Invalid Username or Password",
+                "Error_Message": "Invalid Email or Password",
             }
             return Response(error, status=status.HTTP_403_FORBIDDEN)
     except Exception as e:
@@ -87,18 +82,18 @@ def get_token(username):
 
 
 @api_view(["POST"])
-def login(request, username=None, password=None):
+def login(request, email=None, password=None):
     """
     Authenticate if username and password are correct.
-    Input: username and password
-    Output: return User object or Error
+    Input: email and password
+    Output: return User object
     """
-    username = request.query_params.get("username")
+    email = request.query_params.get("email")
     password = request.query_params.get("password")
     try:
-        user = HackUser.objects.get(username=username)
+        user = get_user_model().objects.get(email=email)
         if user.password == password:
-            token = get_token(username)
+            token = get_token(email)
             user.token = token["token"]
             user.save()
             request.session["authtoken"] = token
@@ -107,7 +102,7 @@ def login(request, username=None, password=None):
         else:
             error = {
                 "Error_code": status.HTTP_400_BAD_REQUEST,
-                "Error_Message": "Invalid Username or Password",
+                "Error_Message": "Invalid Email or Password",
             }
             return Response(error, status=status.HTTP_400_BAD_REQUEST)
 
@@ -122,13 +117,16 @@ def login(request, username=None, password=None):
 
 @api_view(["POST"])
 def logout(request, user_id=None):
-    """ """
+    """Log out a specific user and delete his token.
+    Input: user_id <int>
+    Output: return the User object."""
     try:
-        user = HackUser.objects.get(id=user_id)
+        user = get_user_model().objects.get(id=user_id)
         user.token = ""
         user.save()
         request.session["authtoken"] = ""
-        return Response("Successful logout.", status=status.HTTP_200_OK)
+        serializer = UserSerializer(user)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
     except Exception as e:
         error = {
@@ -139,18 +137,20 @@ def logout(request, user_id=None):
         return Response(error, status=status.HTTP_400_BAD_REQUEST)
 
 
-def authentication(request, username):
+def authentication(request, user_id):
     """
-    Purpose: Login to the Application
+    Login to the Application.
     Input:
-    token (mandatory) <str> user token
-    Output: User object of the logged in user
+        token (mandatory) <str> user's token
+    Output: User object of the logged-in user.
     """
     try:
+
         token = request.session.get("authtoken").get("token")
-        payload = jwt.decode(token, settings.AUTH_TOKEN)
-        user = HackUser.objects.get(username=username)
-        if payload.get("username") == user.username:
+        payload = jwt.decode(token, key=settings.AUTH_TOKEN, algorithms=['HS256'])
+        user = get_user_model().objects.get(id=user_id)
+
+        if payload.get("email") == user.email:
             serializer = UserSerializer(user)
             return Response(serializer.data, status=status.HTTP_200_OK)
         else:
@@ -167,6 +167,7 @@ def authentication(request, username):
         }
         logger.error(e)
         return Response(error, status=status.HTTP_403_FORBIDDEN)
+
     except Exception as e:
         error = {
             "Error_code": status.HTTP_403_FORBIDDEN,
@@ -176,16 +177,16 @@ def authentication(request, username):
         return Response(error, status=status.HTTP_403_FORBIDDEN)
 
 
-def is_authorized(request, username):
+def is_authorized(request, user_id):
     """
     Authorizing the user.
     :param request:
-    :param username:
+    :param user_id:
     :return:
     """
-    validation = authentication(request, username)
+    validation = authentication(request, user_id)
     if validation.status_code == 200:
-        return True  # Todo
+        return True
     else:
         return False
 
@@ -195,14 +196,14 @@ def update_account(request, user_id):
     """
     Update Account Details.
     Input:
-    user_id (mandatory) <int>
-    name (optional) <str>
-    description (optional) <str>
-    photo (optional) <str>
-    Output: User object of the updated user
+        user_id (mandatory) <int>
+        name (optional) <str>
+        description (optional) <str>
+        photo (optional) <str>
+    Output: User object of the updated user.
     """
     try:
-        user = HackUser.objects.get(id=user_id)
+        user = get_user_model().objects.get(id=user_id)
         name = request.query_params.get("name")
         user.name = name
         description = request.query_params.get("description")
@@ -230,6 +231,7 @@ def total_likes(request, user_id):
     """
     Purpose: Returns total number of likes a user has.
     Input: user_id (mandatory) <int>
+    :param request:
     :param user_id:
     :return: str
     """
@@ -238,95 +240,17 @@ def total_likes(request, user_id):
     return Response(f"{sum_likes}")  # Todo None vs 0
 
 
-# @api_view(['PUT'])
-# def FollowUser(request, loggedin_user, user):
-#     '''
-#     Purpose: Follow the user
-#     Input: -
-#     Output: User object of the logged in user
-#     '''
-#     try:
-#         cur_user = HackUser.objects.get(username=loggedin_user)
-#         fol_user = HackUser.objects.get(username=user)
-#         cur_user.following.add(fol_user)
-#         cur_user.save()
-#         serializer = UserSerializer(cur_user)
-#         return Response(serializer.data, status=status.HTTP_204_NO_CONTENT)
-#     except Exception as e:
-#         error = {'Error_code': status.HTTP_400_BAD_REQUEST,
-#                  'Error_Message': "Request Failed. Invalid Details"}
-#         logger.error(e)
-#         return Response(error, status=status.HTTP_400_BAD_REQUEST)
-#
-#
-# @api_view(['GET'])
-# def GetFollowers(request, username):
-#     '''
-#     Purpose: Get all the followers for the user
-#     Input: -
-#     Output: User object of all the following users
-#     '''
-#     try:
-#         user = HackUser.objects.get(username=username)
-#         followers = user.followers.all()
-#         serializer = UserSerializer(followers, many=True)
-#         return Response(serializer.data)
-#     except Exception as e:
-#         error = {'Error_code': status.HTTP_400_BAD_REQUEST,
-#                  'Error_Message': "User does not exist"}
-#         logger.error(e)
-#         return Response(error, status=status.HTTP_400_BAD_REQUEST)
-#
-#
-# @api_view(['GET'])
-# def GetFollowing(request, username):
-#     '''
-#     Purpose: Get all the users the given user is following
-#     Input: -
-#     Output: User object of all the followed users
-#     '''
-#     try:
-#         user = HackUser.objects.get(username=username)
-#         following = user.following.all()
-#         serializer = UserSerializer(following, many=True)
-#         return Response(serializer.data)
-#     except Exception as e:
-#         error = {'Error_code': status.HTTP_400_BAD_REQUEST,
-#                  'Error_Message': "User does not exist"}
-#         logger.error(e)
-#         return Response(error, status=status.HTTP_400_BAD_REQUEST)
-
-#
-# @api_view(['PUT'])
-# def Block_user(request, username):
-#     '''
-#     Purpose: Block the user
-#     Input: -
-#     Output: Blocked user
-#     '''
-#     try:
-#         user = HackUser.objects.get(username=username)
-#         user.blocked = True
-#         user.save()
-#         serializer = UserSerializer(user)
-#         return Response(serializer.data, status=status.HTTP_204_NO_CONTENT)
-#     except Exception as e:
-#         error = {'Error_code': status.HTTP_400_BAD_REQUEST,
-#                  'Error_Message': "User does not exist"}
-#         logger.error(e)
-#         return Response(error, status=status.HTTP_400_BAD_REQUEST)
-
-
-@api_view(["GET"])  # Todo
+@api_view(["GET"])
 def timeline(request, user_id):
     """
-    Purpose: Returns the Timeline of the User in a Paginated Fashion
-    Input: page (mandatory) <int>
-    Output: Tweet object with all the tweets in the page
+    Purpose: Returns the Timeline of the User.
+    Input: user_id <int>
+    Output: Post objects with all the posts.
     """
-    if not is_authorized(request, user_id):  # Todo
+    if is_authorized(request, user_id):
         try:
-            posts = HackPost.objects.filter(author=user_id)
+            user = get_user_model().objects.filter(id=user_id).first()
+            posts = HackPost.objects.filter(author=user)
             serializer = PostSerializer(posts, many=True)
             return Response(serializer.data, status=status.HTTP_200_OK)
 
@@ -348,9 +272,9 @@ def timeline(request, user_id):
 @api_view(["GET"])
 def users(request):
     """
-    Debugging
+    For debugging only.
     """
     if request.method == "GET":
-        users = HackUser.objects.all()
+        users = get_user_model().objects.all()
         serializer = UserSerializer(users, many=True)
         return Response(serializer.data)
