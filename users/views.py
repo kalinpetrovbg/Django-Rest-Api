@@ -203,29 +203,35 @@ def update_account(request, user_id):
         photo (optional) <str>
     Output: User object of the updated user.
     """
-    try:
-        user = get_user_model().objects.get(id=user_id)
-        name = request.query_params.get("name")
-        user.name = name
-        description = request.query_params.get("description")
-        user.description = description
-        # photo = request.query_params.get("photo")
-        # user.photo = photo
-        user.save()
+    if is_authorized(request, user_id):
+        try:
+            user = get_user_model().objects.get(id=user_id)
+            name = request.query_params.get("name")
+            user.name = name
+            description = request.query_params.get("description")
+            user.description = description
+            # photo = request.query_params.get("photo")
+            # user.photo = photo
+            user.save()
 
-        serializer = UserSerializer(user)
-        logger.error("Account Update successful")
+            serializer = UserSerializer(user)
+            logger.error("Account Update successful")
 
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
 
-    except Exception as e:
+        except Exception as e:
+            error = {
+                "Error_code": status.HTTP_400_BAD_REQUEST,
+                "Error_Message": f"User with ID: {user_id} does not exist.",
+            }
+            logger.error("AccountUpdate: Error: " + str(e))
+            return Response(error, status=status.HTTP_400_BAD_REQUEST)
+    else:
         error = {
             "Error_code": status.HTTP_400_BAD_REQUEST,
-            "Error_Message": f"User with ID: {user_id} does not exist.",
+            "Error_Message": "Authentication failed. Please login",
         }
-        logger.error("AccountUpdate: Error: " + str(e))
         return Response(error, status=status.HTTP_400_BAD_REQUEST)
-
 
 @api_view(["GET"])
 def total_likes(request, user_id):
@@ -234,15 +240,40 @@ def total_likes(request, user_id):
     Input: user_id (mandatory) <int>
     :param request:
     :param user_id:
-    :return: str
+    :return: int
     """
-    posts = HackPost.objects.filter(author=user_id).aggregate(Sum("likes"))
-    sum_likes = posts["likes__sum"]
-    return Response(f"{sum_likes}")  # Todo None vs 0
-
+    if is_authorized(request, user_id):
+        posts = HackPost.objects.filter(author=user_id).aggregate(Sum("likes"))
+        sum_likes = posts["likes__sum"]
+        return Response(sum_likes)
+    else:
+        error = {
+            "Error_code": status.HTTP_400_BAD_REQUEST,
+            "Error_Message": "Authentication failed. Please login",
+        }
+        return Response(error, status=status.HTTP_400_BAD_REQUEST)
 
 @api_view(["GET"])
-def timeline(request, user_id):
+def total_posts(request, user_id):
+    """
+    Purpose: Returns total number of posts a user has.
+    Input: user_id (mandatory) <int>
+    :param request:
+    :param user_id:
+    :return: int
+    """
+    if is_authorized(request, user_id):
+        posts = HackPost.objects.filter(author=user_id)
+        return Response(len(posts))
+    else:
+        error = {
+            "Error_code": status.HTTP_400_BAD_REQUEST,
+            "Error_Message": "Authentication failed. Please login",
+        }
+        return Response(error, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(["GET"])
+def feed(request, user_id):
     """
     Purpose: Returns the Timeline of the User.
     Input: user_id <int>
