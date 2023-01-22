@@ -75,7 +75,6 @@ def authentication(request, user_id):
     Output: User object of the logged-in user.
     """
     try:
-
         token = request.session.get("authtoken").get("token")
         payload = jwt.decode(token, key=settings.AUTH_TOKEN, algorithms=['HS256'])
         user = get_user_model().objects.get(id=user_id)

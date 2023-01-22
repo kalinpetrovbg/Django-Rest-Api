@@ -2,6 +2,7 @@
 import json
 import logging
 
+from django.db.models import Count
 from rest_framework import status
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
@@ -83,11 +84,13 @@ def like(request, post_id=None):
         user_id = request.query_params.get("user_id")
         user = get_user_object(user_id)
 
-        if is_authorized(request, user):
+        if is_authorized(request, user_id):
             post = HackPost.objects.get(id=post_id)
-            post.liked_by.add(user)  # Todo not repeat likes
-            post.likes += 1
-            post.save()
+            liked_already = post.liked_by.filter(id=user_id).exists()
+            if not liked_already:
+                post.liked_by.add(user)
+                post.likes += 1
+                post.save()
             serializer = PostSerializer(post)
             return Response(serializer.data, status=status.HTTP_200_OK)
         else:
@@ -118,11 +121,13 @@ def dislike(request, post_id=None):
         user_id = request.query_params.get("user_id")
         user = get_user_object(user_id)
 
-        if is_authorized(request, user):
+        if is_authorized(request, user_id):
             post = HackPost.objects.get(id=post_id)
-            post.liked_by.remove(user)
-            post.likes -= 1
-            post.save()
+            liked_already = post.liked_by.filter(id=user_id).exists()
+            if liked_already:
+                post.liked_by.remove(user)
+                post.likes -= 1
+                post.save()
             serializer = PostSerializer(post)
             return Response(serializer.data, status=status.HTTP_200_OK)
         else:
