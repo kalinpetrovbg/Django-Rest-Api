@@ -161,6 +161,7 @@ def remove_post(request, post_id: int = None):
         if is_authorized(request, user_id):
             serializer = PostSerializer(post)
             post.published = False
+            post.save()
             return Response(serializer.data, status=status.HTTP_200_OK)
         else:
             error = {
