@@ -15,6 +15,19 @@ class UserSerializer(serializers.ModelSerializer):
 class UpdateUserSerializer(serializers.ModelSerializer):
     """Serializer for updating user information."""
 
+    def validate(self, data):
+        """
+        Check if name starts with capital letter.
+        :param data: request data
+        :return: request data
+        """
+        name = data["name"]
+        if name:
+            start_letter = name[0]
+            if start_letter.islower():
+                raise serializers.ValidationError("Name must start with capital letter.")
+        return data
+
     class Meta:
         model = get_user_model()
         fields = ("name", "description")

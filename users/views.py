@@ -205,7 +205,7 @@ def update_account(request, user_id):
         photo (optional) <str>
     Output: User object of the updated user.
     """
-    if is_authorized(request, user_id):
+    if not is_authorized(request, user_id):
         try:
             user = get_user_model().objects.get(id=user_id)
             update_serializer = UpdateUserSerializer(user, data=request.data)
