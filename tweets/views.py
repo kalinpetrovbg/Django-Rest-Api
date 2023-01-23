@@ -19,7 +19,7 @@ logging.basicConfig(filename="debug.log", level=logging.DEBUG)
 
 def get_user_object(user_id: int = None) -> object:
     """
-    Returns User object corresponding to the username.
+    Returns User object corresponding to the user_id.
     :param user_id: int
     :return: get_user_model
     """
@@ -157,8 +157,8 @@ def remove_post(request, post_id: int = None):
 
     try:
         post = HackPost.objects.get(id=post_id)
-        username = post.author.username  # Todo author
-        if is_authorized(request, username):
+        user_id = post.author.id
+        if is_authorized(request, user_id):
             serializer = PostSerializer(post)
             post.published = False
             return Response(serializer.data, status=status.HTTP_200_OK)
