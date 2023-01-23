@@ -2,7 +2,6 @@
 import json
 import logging
 
-from django.db.models import Count
 from rest_framework import status
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
@@ -154,7 +153,6 @@ def remove_post(request, post_id: int = None):
     :param post_id: int
     Output: Post object that was marked for deletion.
     """
-
     try:
         post = HackPost.objects.get(id=post_id)
         user_id = post.author.id

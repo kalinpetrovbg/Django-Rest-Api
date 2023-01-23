@@ -9,5 +9,4 @@ class PostAdmin(admin.ModelAdmin):
     """Post admin model."""
 
     list_display = ("author", "id", "content", "published", "likes")
-    readonly_fields = ("likes", "timestamp", "liked_by")
-    # readonly_fields = ("likes", "posted_on", "liked_by")
+    readonly_fields = ("likes", "posted_on", "liked_by")
