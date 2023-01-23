@@ -125,8 +125,8 @@ def create(request):
     """
     Purpose: Create a new user
     Input:
-    email (mandatory) <str> Chosen Username
-    password (mandatory) <str> Chosen Password
+        email (mandatory) <str>
+        password (mandatory) <str>
     Output: User object of the created user
     """
     serializer = UserSerializer(data=request.query_params)
@@ -139,8 +139,10 @@ def create(request):
 @api_view(["POST"])
 def login(request, email=None, password=None):
     """
-    Authenticate if username and password are correct.
-    Input: email and password
+    Authenticate if email and password are correct.
+    Input:
+        email (mandatory) <str>
+        password (mandatory) <str>
     Output: return User object
     """
     email = request.query_params.get("email")
@@ -164,7 +166,7 @@ def login(request, email=None, password=None):
     except Exception as e:
         error = {
             "Error_code": status.HTTP_400_BAD_REQUEST,
-            "Error_Message": "Invalid Username",
+            "Error_Message": "Invalid Email",
         }
         logger.error(e)
         return Response(error, status=status.HTTP_400_BAD_REQUEST)
