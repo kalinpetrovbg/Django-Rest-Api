@@ -11,3 +11,10 @@ class UserSerializer(serializers.ModelSerializer):
         model = get_user_model()
         fields = "__all__"
         extra_kwargs = {"password": {"write_only": True, "min_length": 5}}
+
+class UpdateUserSerializer(serializers.ModelSerializer):
+    """Serializer for updating user information."""
+
+    class Meta:
+        model = get_user_model()
+        fields = ("name", "description")

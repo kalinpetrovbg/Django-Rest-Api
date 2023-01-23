@@ -13,7 +13,7 @@ from rest_framework.response import Response
 from tweets.models import HackPost
 from tweets.serializers import PostSerializer
 from django.contrib.auth import get_user_model
-from users.serializers import UserSerializer
+from users.serializers import UserSerializer, UpdateUserSerializer
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(
@@ -23,6 +23,10 @@ logging.basicConfig(
 
 EXP_TIME = datetime.timedelta(hours=2)
 
+AUTH_ERROR = {
+    "Error_code": status.HTTP_401_UNAUTHORIZED,
+    "Error_Message": "Authentication failed. Please login",
+}
 
 def get_token(email):
     """
@@ -157,11 +161,7 @@ def login(request, email=None, password=None):
             serializer = UserSerializer(user)
             return Response(serializer.data, status=status.HTTP_200_OK)
         else:
-            error = {
-                "Error_code": status.HTTP_400_BAD_REQUEST,
-                "Error_Message": "Invalid Email or Password",
-            }
-            return Response(error, status=status.HTTP_400_BAD_REQUEST)
+            return Response(AUTH_ERROR, status=status.HTTP_401_UNAUTHORIZED)
 
     except Exception as e:
         error = {
@@ -208,32 +208,34 @@ def update_account(request, user_id):
     if is_authorized(request, user_id):
         try:
             user = get_user_model().objects.get(id=user_id)
-            name = request.query_params.get("name")
-            user.name = name
-            description = request.query_params.get("description")
-            user.description = description
-            # photo = request.query_params.get("photo")
-            # user.photo = photo
-            user.save()
+            update_serializer = UpdateUserSerializer(user, data=request.data)
 
-            serializer = UserSerializer(user)
-            logger.error("Account Update successful")
+            if update_serializer.is_valid():
+                update_serializer.save()
+                return Response(update_serializer.data, status=status.HTTP_200_OK)
+            else:
+                return Response(update_serializer.data, status=status.HTTP_200_OK)
+            # name = request.query_params.get("name")
+            # user.name = name
+            # description = request.query_params.get("description")
+            # user.description = description
+            # # photo = request.query_params.get("photo")
+            # # user.photo = photo
+            # user.save()
+            # serializer = UserSerializer(user)
+            # logger.error("Account Update successful")
 
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
+            # return Response(serializer.data, status=status.HTTP_201_CREATED)
 
         except Exception as e:
             error = {
                 "Error_code": status.HTTP_400_BAD_REQUEST,
-                "Error_Message": f"User with ID: {user_id} does not exist.",
+                "Error_Message": "Account update error",
             }
-            logger.error("AccountUpdate: Error: " + str(e))
+            logger.error(str(e))
             return Response(error, status=status.HTTP_400_BAD_REQUEST)
     else:
-        error = {
-            "Error_code": status.HTTP_400_BAD_REQUEST,
-            "Error_Message": "Authentication failed. Please login",
-        }
-        return Response(error, status=status.HTTP_400_BAD_REQUEST)
+        return Response(AUTH_ERROR, status=status.HTTP_401_UNAUTHORIZED)
 
 @api_view(["GET"])
 def total_likes(request, user_id):
@@ -249,11 +251,7 @@ def total_likes(request, user_id):
         sum_likes = posts["likes__sum"]
         return Response(sum_likes)
     else:
-        error = {
-            "Error_code": status.HTTP_400_BAD_REQUEST,
-            "Error_Message": "Authentication failed. Please login",
-        }
-        return Response(error, status=status.HTTP_400_BAD_REQUEST)
+        return Response(AUTH_ERROR, status=status.HTTP_401_UNAUTHORIZED)
 
 @api_view(["GET"])
 def total_posts(request, user_id):
@@ -268,11 +266,7 @@ def total_posts(request, user_id):
         posts = HackPost.objects.filter(author=user_id)
         return Response(len(posts))
     else:
-        error = {
-            "Error_code": status.HTTP_400_BAD_REQUEST,
-            "Error_Message": "Authentication failed. Please login",
-        }
-        return Response(error, status=status.HTTP_400_BAD_REQUEST)
+        return Response(AUTH_ERROR, status=status.HTTP_401_UNAUTHORIZED)
 
 @api_view(["GET"])
 def feed(request, user_id):
@@ -296,11 +290,7 @@ def feed(request, user_id):
             logger.error(e)
             return Response(json.dumps(error), status=status.HTTP_400_BAD_REQUEST)
     else:
-        error = {
-            "Error_code": status.HTTP_400_BAD_REQUEST,
-            "Error_Message": "Authentication failed. Please login",
-        }
-        return Response(error, status=status.HTTP_400_BAD_REQUEST)
+        return Response(AUTH_ERROR, status=status.HTTP_401_UNAUTHORIZED)
 
 
 @api_view(["GET"])
