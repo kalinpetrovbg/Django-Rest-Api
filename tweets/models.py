@@ -2,7 +2,7 @@
 from datetime import datetime
 
 from django.db import models
-# from django.utils import timezone
+from django.utils import timezone
 
 from django.contrib.auth import get_user_model
 
@@ -19,7 +19,7 @@ class HackPost(models.Model):
     liked_by = models.ManyToManyField(get_user_model(), related_name="liked_users", blank=True)
     likes = models.IntegerField(default=0)
     published = models.BooleanField(default=True)
-    # timestamp = models.DateTimeField(default=timezone.now) for deletion after 10 days.
+    # posted_on = models.DateTimeField(default=timezone.now)
 
 
     class Meta:
