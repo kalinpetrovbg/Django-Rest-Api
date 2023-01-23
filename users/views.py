@@ -307,6 +307,6 @@ def users(request):
     For debugging only.
     """
     if request.method == "GET":
-        users = get_user_model().objects.all()
-        serializer = UserSerializer(users, many=True)
+        all_users = get_user_model().objects.all()
+        serializer = UserSerializer(all_users, many=True)
         return Response(serializer.data)

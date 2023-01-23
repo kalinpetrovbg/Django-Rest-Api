@@ -1,4 +1,5 @@
 from django.contrib import admin
+from django.contrib.auth.decorators import user_passes_test
 from django.contrib.auth.models import Group
 from django.urls import reverse
 from django.utils.html import format_html
@@ -30,14 +31,28 @@ class UserAdmin(admin.ModelAdmin):
 
     exclude = ("groups", "user_permissions")
 
-    actions = ("activate_users",)
+    actions = ("activate_users", "deactivate_users")
 
+    @user_passes_test(lambda user: user.is_superuser)
     def activate_users(self, request, queryset):
-        """Actvate sandboxed users and enable them to log in."""
+        """
+        Actvate sandboxed users and enable them to log in.
+        Only for superusers.
+        """
         queryset.update(is_active=True)
 
+    @user_passes_test(lambda user: user.is_superuser)
+    def deactivate_users(self, request, queryset):
+        """
+        Dectvate active users and disable them from loggin in.
+        Only for superusers.
+        """
+        queryset.update(is_active=False)
+
     def profile_image(self, obj: CustomUser) -> bool:
-        """Checks if the user has uploaded a photo or not."""
+        """
+        Checks if the user has uploaded a photo or not.
+        """
         return True if obj.photo else False
     profile_image.boolean = True
 
