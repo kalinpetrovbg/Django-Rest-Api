@@ -16,6 +16,12 @@ logger = logging.getLogger(__name__)
 logging.basicConfig(filename="debug.log", level=logging.DEBUG)
 
 
+AUTH_ERROR = {
+    "Error_code": status.HTTP_401_UNAUTHORIZED,
+    "Error_Message": "Authentication failed. Please login",
+}
+
+
 def get_user_object(user_id: int = None) -> object:
     """
     Returns User object corresponding to the user_id.
@@ -64,11 +70,7 @@ def create_post(request):
                 logger.error(e)
                 return Response(json.dumps(error), status=status.HTTP_400_BAD_REQUEST)
         else:
-            error = {
-                "Error_code": status.HTTP_400_BAD_REQUEST,
-                "Error_Message": "Authentication failed. Please login",
-            }
-            return Response(error, status=status.HTTP_400_BAD_REQUEST)
+            return Response(AUTH_ERROR, status=status.HTTP_401_UNAUTHORIZED)
 
 
 @api_view(["PUT"])
@@ -93,16 +95,12 @@ def like(request, post_id=None):
             serializer = PostSerializer(post)
             return Response(serializer.data, status=status.HTTP_200_OK)
         else:
-            error = {
-                "Error_code": status.HTTP_400_BAD_REQUEST,
-                "Error_Message": "Authentication failed. Please login",
-            }
-            return Response(error, status=status.HTTP_400_BAD_REQUEST)
+            return Response(AUTH_ERROR, status=status.HTTP_401_UNAUTHORIZED)
 
     except Exception as e:
         error = {
             "Error_code": status.HTTP_400_BAD_REQUEST,
-            "Error_Message": "Error liking the tweet!",
+            "Error_Message": "Error liking the post!",
         }
         logger.error(e)
         return Response(json.dumps(error), status=status.HTTP_400_BAD_REQUEST)
@@ -130,16 +128,12 @@ def dislike(request, post_id=None):
             serializer = PostSerializer(post)
             return Response(serializer.data, status=status.HTTP_200_OK)
         else:
-            error = {
-                "Error_code": status.HTTP_400_BAD_REQUEST,
-                "Error_Message": "Authentication failed. Please login",
-            }
-            return Response(error, status=status.HTTP_400_BAD_REQUEST)
+            return Response(AUTH_ERROR, status=status.HTTP_401_UNAUTHORIZED)
 
     except Exception as e:
         error = {
             "Error_code": status.HTTP_400_BAD_REQUEST,
-            "Error_Message": "Error liking the tweet",
+            "Error_Message": "Error disliking the post",
         }
         logger.error(e)
         return Response(json.dumps(error), status=status.HTTP_400_BAD_REQUEST)
@@ -162,15 +156,12 @@ def remove_post(request, post_id: int = None):
             post.save()
             return Response(serializer.data, status=status.HTTP_200_OK)
         else:
-            error = {
-                "Error_code": status.HTTP_400_BAD_REQUEST,
-                "Error_Message": "Authentication failed. Please login",
-            }
-            return Response(error, status=status.HTTP_400_BAD_REQUEST)
+            return Response(AUTH_ERROR, status=status.HTTP_401_UNAUTHORIZED)
+
     except Exception as e:
         error = {
             "Error_code": status.HTTP_400_BAD_REQUEST,
-            "Error_Message": "This tweet no longer exists",
+            "Error_Message": "This post no longer exists",
         }
         logger.error(e)
         return Response(json.dumps(error), status=status.HTTP_400_BAD_REQUEST)
