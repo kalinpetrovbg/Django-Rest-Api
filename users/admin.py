@@ -1,5 +1,4 @@
 from django.contrib import admin
-from django.contrib.auth.decorators import user_passes_test
 from django.contrib.auth.models import Group
 from django.urls import reverse
 from django.utils.html import format_html
@@ -33,7 +32,6 @@ class UserAdmin(admin.ModelAdmin):
 
     actions = ("activate_users", "deactivate_users")
 
-    @user_passes_test(lambda user: user.is_superuser)
     def activate_users(self, request, queryset):
         """
         Actvate sandboxed users and enable them to log in.
@@ -41,7 +39,6 @@ class UserAdmin(admin.ModelAdmin):
         """
         queryset.update(is_active=True)
 
-    @user_passes_test(lambda user: user.is_superuser)
     def deactivate_users(self, request, queryset):
         """
         Dectvate active users and disable them from loggin in.
