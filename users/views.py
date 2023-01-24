@@ -133,7 +133,12 @@ def create(request):
         password (mandatory) <str>
     Output: User object of the created user
     """
-    serializer = UserSerializer(data=request.query_params)
+    serializer = UserSerializer(data=request.data)
+
+    email = request.data.get("email")
+    if get_user_model().objects.filter(email=email).exists():
+        return Response("User already exist.", status=status.HTTP_400_BAD_REQUEST)
+
     if serializer.is_valid():
         serializer.save()
         return Response(serializer.data, status=status.HTTP_201_CREATED)
@@ -141,7 +146,7 @@ def create(request):
 
 
 @api_view(["POST"])
-def login(request, email=None, password=None):
+def login(request):
     """
     Authenticate if email and password are correct.
     Input:
@@ -149,8 +154,8 @@ def login(request, email=None, password=None):
         password (mandatory) <str>
     Output: return User object
     """
-    email = request.query_params.get("email")
-    password = request.query_params.get("password")
+    email = request.data.get("email")
+    password = request.data.get("password")
     try:
         user = get_user_model().objects.get(email=email)
         if user.password == password:
