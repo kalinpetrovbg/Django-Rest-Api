@@ -249,7 +249,9 @@ def total_likes(request, user_id):
     if is_authorized(request, user_id):
         posts = HackPost.objects.filter(author=user_id).aggregate(Sum("likes"))
         sum_likes = posts["likes__sum"]
-        return Response(sum_likes)
+        if sum_likes:
+            return Response(sum_likes)
+        return Response(0)
     else:
         return Response(AUTH_ERROR, status=status.HTTP_401_UNAUTHORIZED)
 
